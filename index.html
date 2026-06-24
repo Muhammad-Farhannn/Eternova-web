@@ -461,11 +461,14 @@
         const animationSection = document.getElementById('animation-section');
         const overlay = document.getElementById('animation-overlay');
 
-        const frameCount = 192;
+        const isMobile = window.innerWidth < 768;
+        const frameCount = isMobile ? 211 : 192;
         const images = [];
         let loadedImages = 0;
 
-        const currentFrame = index => `ezgif-frame-${index.toString().padStart(3, '0')}.jpg`;
+        const currentFrame = index => isMobile 
+            ? `mobile/ezgif-frame-${index.toString().padStart(3, '0')}.jpg`
+            : `ezgif-frame-${index.toString().padStart(3, '0')}.jpg`;
 
         const preloadImages = () => {
             for (let i = 1; i <= frameCount; i++) {
