@@ -462,7 +462,7 @@
         const overlay = document.getElementById('animation-overlay');
 
         const isMobile = window.innerWidth < 768;
-        const frameCount = 30;
+        const frameCount = isMobile ? 52 : 48;
         const images = [];
         let loadedImages = 0;
 
