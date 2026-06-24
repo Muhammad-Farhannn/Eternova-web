@@ -222,7 +222,7 @@
         canvas {
             width: 100vw;
             height: 100vh;
-            object-fit: cover;
+            object-fit: contain;
         }
         
         #loading {
@@ -255,8 +255,8 @@
 <div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop flex justify-between items-center h-full">
 
 <!-- Mobile Menu Button -->
-<button id="mobile-menu-btn" class="md:hidden hover:text-tertiary transition-colors z-50 relative">
-<span class="material-symbols-outlined text-3xl">menu</span>
+<button id="mobile-menu-btn" class="md:hidden hover:text-tertiary transition-colors z-50 relative pr-2">
+<span class="material-symbols-outlined text-2xl md:text-3xl">menu</span>
 </button>
 
 <!-- Nav Links -->
@@ -272,15 +272,15 @@
 </div>
 
 <!-- Actions -->
-<div class="flex gap-4 md:gap-6 items-center z-50 relative">
-<button aria-label="Search" class="hidden sm:block hover:text-tertiary transition-colors group">
-<span class="material-symbols-outlined group-hover:scale-110 transition-transform">search</span>
+<div class="flex gap-2 sm:gap-4 md:gap-6 items-center z-50 relative">
+<button aria-label="Search" class="hover:text-tertiary transition-colors group">
+<span class="material-symbols-outlined text-[20px] md:text-[24px] group-hover:scale-110 transition-transform">search</span>
 </button>
-<button aria-label="Favorites" class="hidden sm:block hover:text-tertiary transition-colors group">
-<span class="material-symbols-outlined group-hover:scale-110 transition-transform">favorite</span>
+<button aria-label="Favorites" class="hover:text-tertiary transition-colors group">
+<span class="material-symbols-outlined text-[20px] md:text-[24px] group-hover:scale-110 transition-transform">favorite</span>
 </button>
 <button aria-label="Cart" class="hover:text-tertiary transition-colors group relative">
-<span class="material-symbols-outlined group-hover:scale-110 transition-transform">shopping_bag</span>
+<span class="material-symbols-outlined text-[20px] md:text-[24px] group-hover:scale-110 transition-transform">shopping_bag</span>
 <span class="absolute -top-1 -right-1 bg-tertiary text-black text-[10px] w-4 h-4 rounded-full flex items-center justify-center font-bold">2</span>
 </button>
 </div>
