@@ -1,3 +1,4 @@
+const supabase = require('../config/supabase');
 
 // @desc    Update user profile
 // @route   PUT /api/user/profile
@@ -6,13 +7,16 @@ exports.updateProfile = async (req, res, next) => {
     try {
         const { name, phone } = req.body;
 
-        const user = await User.findByIdAndUpdate(
-            req.user.id,
-            { name, phone },
-            { new: true, runValidators: true }
-        );
+        const { data: user, error } = await supabase
+            .from('profiles')
+            .update({ name, phone })
+            .eq('id', req.user.id)
+            .select()
+            .single();
 
-        user.password = undefined;
+        if (error) {
+            return res.status(400).json({ success: false, message: error.message });
+        }
 
         res.status(200).json({ success: true, data: user });
     } catch (err) {
@@ -25,22 +29,27 @@ exports.updateProfile = async (req, res, next) => {
 // @access  Private
 exports.updatePassword = async (req, res, next) => {
     try {
-        const { oldPassword, newPassword } = req.body;
+        const { newPassword } = req.body;
 
-        if (!oldPassword || !newPassword) {
-            return res.status(400).json({ success: false, message: 'Please provide old and new password' });
+        if (!newPassword) {
+            return res.status(400).json({ success: false, message: 'Please provide new password' });
         }
 
-        const user = await User.findById(req.user.id).select('+password');
+        // Use the auth access token we already have in the headers!
+        // req.headers.authorization has the bearer token.
+        const token = req.headers.authorization.split(' ')[1];
+        
+        // Supabase allows password update if we pass the current access token
+        // Wait, supabase.auth.updateUser only updates the current authenticated user's session
+        // If we initialize a client with the token, it will work.
+        // Actually, supabase admin client can also update password:
+        const { data, error } = await supabase.auth.admin.updateUserById(req.user.id, {
+            password: newPassword
+        });
 
-        const isMatch = await user.matchPassword(oldPassword);
-
-        if (!isMatch) {
-            return res.status(401).json({ success: false, message: 'Password incorrect' });
+        if (error) {
+            return res.status(400).json({ success: false, message: error.message });
         }
-
-        user.password = newPassword;
-        await user.save();
 
         res.status(200).json({ success: true, message: 'Password updated successfully' });
     } catch (err) {
@@ -53,15 +62,46 @@ exports.updatePassword = async (req, res, next) => {
 // @access  Private
 exports.addAddress = async (req, res, next) => {
     try {
-        const { label, street, city, state, zip, country, isDefault } = req.body;
+        const newAddress = {
+            id: require('crypto').randomUUID(),
+            ...req.body
+        };
 
-        const user = await User.findById(req.user.id);
+        // Fetch current addresses
+        const { data: profile, error: fetchError } = await supabase
+            .from('profiles')
+            .select('addresses')
+            .eq('id', req.user.id)
+            .single();
 
-        user.addresses.push({ label, street, city, state, zip, country, isDefault });
+        if (fetchError) {
+            return res.status(404).json({ success: false, message: 'Profile not found' });
+        }
 
-        await user.save();
+        let addresses = profile.addresses || [];
+        if (!Array.isArray(addresses)) addresses = [];
 
-        res.status(200).json({ success: true, data: user.addresses });
+        // If new address is default, unset others
+        if (newAddress.isDefault) {
+            addresses = addresses.map(addr => ({ ...addr, isDefault: false }));
+        } else if (addresses.length === 0) {
+            newAddress.isDefault = true;
+        }
+
+        addresses.push(newAddress);
+
+        const { data: updatedProfile, error: updateError } = await supabase
+            .from('profiles')
+            .update({ addresses })
+            .eq('id', req.user.id)
+            .select()
+            .single();
+
+        if (updateError) {
+            return res.status(400).json({ success: false, message: updateError.message });
+        }
+
+        res.status(200).json({ success: true, data: updatedProfile.addresses });
     } catch (err) {
         next(err);
     }
@@ -72,20 +112,44 @@ exports.addAddress = async (req, res, next) => {
 // @access  Private
 exports.updateAddress = async (req, res, next) => {
     try {
-        const user = await User.findById(req.user.id);
         const addressId = req.params.addressId;
 
-        const address = user.addresses.id(addressId);
+        const { data: profile, error: fetchError } = await supabase
+            .from('profiles')
+            .select('addresses')
+            .eq('id', req.user.id)
+            .single();
 
-        if (!address) {
+        if (fetchError) {
+            return res.status(404).json({ success: false, message: 'Profile not found' });
+        }
+
+        let addresses = profile.addresses || [];
+        if (!Array.isArray(addresses)) addresses = [];
+
+        const index = addresses.findIndex(addr => addr.id === addressId);
+        if (index === -1) {
             return res.status(404).json({ success: false, message: 'Address not found' });
         }
 
-        Object.assign(address, req.body);
+        if (req.body.isDefault) {
+            addresses = addresses.map(addr => ({ ...addr, isDefault: false }));
+        }
 
-        await user.save();
+        addresses[index] = { ...addresses[index], ...req.body };
 
-        res.status(200).json({ success: true, data: user.addresses });
+        const { data: updatedProfile, error: updateError } = await supabase
+            .from('profiles')
+            .update({ addresses })
+            .eq('id', req.user.id)
+            .select()
+            .single();
+
+        if (updateError) {
+            return res.status(400).json({ success: false, message: updateError.message });
+        }
+
+        res.status(200).json({ success: true, data: updatedProfile.addresses });
     } catch (err) {
         next(err);
     }
@@ -96,14 +160,35 @@ exports.updateAddress = async (req, res, next) => {
 // @access  Private
 exports.deleteAddress = async (req, res, next) => {
     try {
-        const user = await User.findById(req.user.id);
         const addressId = req.params.addressId;
 
-        user.addresses = user.addresses.filter(addr => addr._id.toString() !== addressId);
+        const { data: profile, error: fetchError } = await supabase
+            .from('profiles')
+            .select('addresses')
+            .eq('id', req.user.id)
+            .single();
 
-        await user.save();
+        if (fetchError) {
+            return res.status(404).json({ success: false, message: 'Profile not found' });
+        }
 
-        res.status(200).json({ success: true, data: user.addresses });
+        let addresses = profile.addresses || [];
+        if (!Array.isArray(addresses)) addresses = [];
+
+        addresses = addresses.filter(addr => addr.id !== addressId);
+
+        const { data: updatedProfile, error: updateError } = await supabase
+            .from('profiles')
+            .update({ addresses })
+            .eq('id', req.user.id)
+            .select()
+            .single();
+
+        if (updateError) {
+            return res.status(400).json({ success: false, message: updateError.message });
+        }
+
+        res.status(200).json({ success: true, data: updatedProfile.addresses });
     } catch (err) {
         next(err);
     }

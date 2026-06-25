@@ -1,60 +1,53 @@
+const supabase = require('../config/supabase');
 
 // @desc    Get all products
 // @route   GET /api/products
 // @access  Public
 exports.getProducts = async (req, res, next) => {
     try {
-        let query;
-
-        const reqQuery = { ...req.query };
-        const removeFields = ['select', 'sort', 'page', 'limit', 'search', 'minPrice', 'maxPrice'];
-        removeFields.forEach(param => delete reqQuery[param]);
-
-        let queryStr = JSON.stringify(reqQuery);
-        queryStr = queryStr.replace(/\b(gt|gte|lt|lte|in)\b/g, match => `$${match}`);
-
-        let parsedQuery = JSON.parse(queryStr);
+        let query = supabase.from('products').select('*', { count: 'exact' });
 
         // Search by name
         if (req.query.search) {
-            parsedQuery.name = { $regex: req.query.search, $options: 'i' };
+            query = query.ilike('name', `%${req.query.search}%`);
         }
 
         // Price range
-        if (req.query.minPrice || req.query.maxPrice) {
-            parsedQuery.price = {};
-            if (req.query.minPrice) parsedQuery.price.$gte = req.query.minPrice;
-            if (req.query.maxPrice) parsedQuery.price.$lte = req.query.maxPrice;
+        if (req.query.minPrice) {
+            query = query.gte('price', req.query.minPrice);
         }
-
-        query = Product.find(parsedQuery);
+        if (req.query.maxPrice) {
+            query = query.lte('price', req.query.maxPrice);
+        }
 
         // Sort
         if (req.query.sort) {
-            let sortBy = req.query.sort.split(',').join(' ');
-            if (req.query.sort === 'price_asc') sortBy = 'price';
-            if (req.query.sort === 'price_desc') sortBy = '-price';
-            if (req.query.sort === 'newest') sortBy = '-createdAt';
-            if (req.query.sort === 'rating') sortBy = '-ratings';
-            query = query.sort(sortBy);
+            let sortBy = req.query.sort;
+            let ascending = true;
+            if (sortBy === 'price_asc') { sortBy = 'price'; ascending = true; }
+            else if (sortBy === 'price_desc') { sortBy = 'price'; ascending = false; }
+            else if (sortBy === 'newest') { sortBy = 'created_at'; ascending = false; }
+            else if (sortBy === 'rating') { sortBy = 'ratings'; ascending = false; }
+            query = query.order(sortBy, { ascending });
         } else {
-            query = query.sort('-createdAt');
+            query = query.order('created_at', { ascending: false });
         }
 
         // Pagination
         const page = parseInt(req.query.page, 10) || 1;
         const limit = parseInt(req.query.limit, 10) || 12;
         const startIndex = (page - 1) * limit;
-        const endIndex = page * limit;
-        const total = await Product.countDocuments(parsedQuery);
+        const endIndex = page * limit - 1;
 
-        query = query.skip(startIndex).limit(limit);
+        query = query.range(startIndex, endIndex);
 
-        const products = await query;
+        const { data: products, count, error } = await query;
+
+        if (error) throw error;
 
         // Pagination result
         const pagination = {};
-        if (endIndex < total) {
+        if (endIndex + 1 < count) {
             pagination.next = { page: page + 1, limit };
         }
         if (startIndex > 0) {
@@ -64,7 +57,7 @@ exports.getProducts = async (req, res, next) => {
         res.status(200).json({
             success: true,
             count: products.length,
-            total,
+            total: count,
             pagination,
             data: products
         });
@@ -78,7 +71,13 @@ exports.getProducts = async (req, res, next) => {
 // @access  Public
 exports.getFeaturedProducts = async (req, res, next) => {
     try {
-        const products = await Product.find({ isFeatured: true });
+        const { data: products, error } = await supabase
+            .from('products')
+            .select('*')
+            .eq('is_featured', true);
+
+        if (error) throw error;
+
         res.status(200).json({ success: true, count: products.length, data: products });
     } catch (err) {
         next(err);
@@ -90,9 +89,13 @@ exports.getFeaturedProducts = async (req, res, next) => {
 // @access  Public
 exports.getProduct = async (req, res, next) => {
     try {
-        const product = await Product.findById(req.params.id);
+        const { data: product, error } = await supabase
+            .from('products')
+            .select('*')
+            .eq('id', req.params.id)
+            .single();
 
-        if (!product) {
+        if (error || !product) {
             return res.status(404).json({ success: false, message: 'Product not found' });
         }
 
@@ -107,7 +110,13 @@ exports.getProduct = async (req, res, next) => {
 // @access  Public
 exports.getProductReviews = async (req, res, next) => {
     try {
-        const reviews = await Review.find({ product: req.params.id });
+        const { data: reviews, error } = await supabase
+            .from('reviews')
+            .select('*')
+            .eq('product_id', req.params.id);
+
+        if (error) throw error;
+
         res.status(200).json({ success: true, count: reviews.length, data: reviews });
     } catch (err) {
         next(err);
@@ -121,36 +130,59 @@ exports.createProductReview = async (req, res, next) => {
     try {
         const { rating, comment } = req.body;
 
-        const product = await Product.findById(req.params.id);
+        const { data: product, error: productError } = await supabase
+            .from('products')
+            .select('*')
+            .eq('id', req.params.id)
+            .single();
 
-        if (!product) {
+        if (productError || !product) {
             return res.status(404).json({ success: false, message: 'Product not found' });
         }
 
         // Check if already reviewed
-        const alreadyReviewed = await Review.findOne({
-            product: req.params.id,
-            user: req.user.id
-        });
+        const { data: alreadyReviewed, error: reviewError } = await supabase
+            .from('reviews')
+            .select('*')
+            .eq('product_id', req.params.id)
+            .eq('user_id', req.user.id)
+            .single();
 
         if (alreadyReviewed) {
             return res.status(400).json({ success: false, message: 'Product already reviewed' });
         }
 
-        const review = await Review.create({
-            rating: Number(rating),
-            comment,
-            name: req.user.name,
-            user: req.user.id,
-            product: req.params.id
-        });
+        const { data: review, error: createError } = await supabase
+            .from('reviews')
+            .insert([{
+                rating: Number(rating),
+                comment,
+                name: req.user.name,
+                user_id: req.user.id,
+                product_id: req.params.id
+            }])
+            .select()
+            .single();
+
+        if (createError) throw createError;
 
         // Recalculate rating
-        const reviews = await Review.find({ product: req.params.id });
-        product.numReviews = reviews.length;
-        product.ratings = reviews.reduce((acc, item) => item.rating + acc, 0) / reviews.length;
+        const { data: reviews, error: fetchReviewsError } = await supabase
+            .from('reviews')
+            .select('rating')
+            .eq('product_id', req.params.id);
 
-        await product.save();
+        if (fetchReviewsError) throw fetchReviewsError;
+
+        const numReviews = reviews.length;
+        const ratings = reviews.reduce((acc, item) => item.rating + acc, 0) / (numReviews || 1);
+
+        const { error: updateError } = await supabase
+            .from('products')
+            .update({ num_reviews: numReviews, ratings })
+            .eq('id', req.params.id);
+
+        if (updateError) throw updateError;
 
         res.status(201).json({ success: true, data: review });
     } catch (err) {

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Scroll Animation & Eternova</title>
+    <title>Create Account - Eternova</title>
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
@@ -276,9 +276,7 @@
 
 <body
     class="bg-background text-on-background font-body-md antialiased overflow-x-hidden selection:bg-tertiary selection:text-white">
-
-    <!-- TopNavBar -->
-    <header class="fixed top-0 w-full z-50 py-4 md:py-6 transition-all duration-300" id="main-nav">
+<header class="fixed top-0 w-full z-50 py-4 md:py-6 transition-all duration-300" id="main-nav">
         <div
             class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop flex justify-between items-center h-full">
 
@@ -326,98 +324,79 @@
             </div>
         </div>
     </header>
+<main class="pt-32 pb-16 min-h-screen flex items-center justify-center bg-background">
 
-    <div id="animation-section">
-        <div class="sticky-container">
-            <div id="loading">Loading frames... 0%</div>
-            <canvas id="scroll-canvas"></canvas>
-            <div id="animation-overlay"
-                class="absolute inset-0 flex flex-col items-center justify-center z-10 pointer-events-none transition-opacity duration-100 ease-linear px-4 text-center">
-                <h1
-                    class="font-display-lg text-4xl sm:text-5xl md:text-display-lg text-white mb-2 md:mb-4 tracking-widest uppercase drop-shadow-2xl">
-                    Eternova</h1>
-                <p
-                    class="font-label-caps text-xs sm:text-sm md:text-label-caps text-white tracking-[0.2em] uppercase drop-shadow-lg">
-                    The name of Elegance</p>
-            </div>
+    <div class="max-w-md w-full mx-auto px-margin-mobile bg-surface-container-low p-8 rounded-xl border border-outline-variant/20 shadow-lg my-12">
+        <div class="text-center mb-8">
+            <h1 class="font-headline-lg text-3xl text-primary mb-2">Create Account</h1>
+            <p class="font-body-md text-on-surface-variant">Join Eternova for exclusive benefits.</p>
         </div>
+        <form id="signup-form" class="space-y-6">
+            <div id="error-msg" class="hidden bg-error-container text-on-error p-3 rounded-lg text-sm font-body-sm"></div>
+            <div>
+                <label class="block font-label-caps text-label-caps text-primary mb-2">Full Name</label>
+                <input type="text" id="name" required class="w-full bg-surface-container border border-outline-variant/30 rounded-lg px-4 py-3 text-on-surface focus:outline-none focus:border-tertiary transition-colors" placeholder="Jane Doe">
+            </div>
+            <div>
+                <label class="block font-label-caps text-label-caps text-primary mb-2">Email</label>
+                <input type="email" id="email" required class="w-full bg-surface-container border border-outline-variant/30 rounded-lg px-4 py-3 text-on-surface focus:outline-none focus:border-tertiary transition-colors" placeholder="your@email.com">
+            </div>
+            <div>
+                <label class="block font-label-caps text-label-caps text-primary mb-2">Password</label>
+                <input type="password" id="password" required minlength="6" class="w-full bg-surface-container border border-outline-variant/30 rounded-lg px-4 py-3 text-on-surface focus:outline-none focus:border-tertiary transition-colors" placeholder="••••••••">
+            </div>
+            <button type="submit" id="submit-btn" class="w-full bg-primary text-on-primary font-label-caps text-label-caps py-4 rounded-full hover:bg-tertiary hover:text-black transition-all duration-300 uppercase tracking-widest mt-2">
+                Create Account
+            </button>
+        </form>
+        <p class="mt-6 text-center font-body-sm text-on-surface-variant">
+            Already have an account? <a href="login.html" class="text-primary hover:text-tertiary hover:underline underline-offset-4 transition-colors">Sign in</a>
+        </p>
     </div>
+    <script>
+        document.getElementById('signup-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const errorMsg = document.getElementById('error-msg');
+            const submitBtn = document.getElementById('submit-btn');
+            
+            submitBtn.textContent = 'Creating...';
+            submitBtn.disabled = true;
+            
+            try {
+                const res = await fetch('/api/auth/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    if (data.token) localStorage.setItem('token', data.token);
+                    window.location.href = 'profile.html';
+                } else {
+                    errorMsg.textContent = data.message || 'Registration failed';
+                    errorMsg.classList.remove('hidden');
+                }
+            } catch (err) {
+                errorMsg.textContent = 'A network error occurred.';
+                errorMsg.classList.remove('hidden');
+            } finally {
+                submitBtn.textContent = 'Create Account';
+                submitBtn.disabled = false;
+            }
+        });
+        
+        // If already logged in, redirect to profile
+        if (localStorage.getItem('token')) {
+            window.location.href = 'profile.html';
+        }
+    </script>
 
-    <!-- 3. Brand Promise Bar -->
-    <section class="py-8 md:py-12 border-y border-outline-variant/20 bg-surface-container-low">
-        <div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8 divide-x divide-outline-variant/20">
-                <div class="flex flex-col items-center justify-center text-center px-4">
-                    <span class="material-symbols-outlined text-tertiary mb-3 text-3xl">workspace_premium</span>
-                    <span class="font-label-caps text-label-caps text-primary tracking-wider">Premium Quality</span>
-                </div>
-                <div class="flex flex-col items-center justify-center text-center px-4">
-                    <span class="material-symbols-outlined text-tertiary mb-3 text-3xl">spa</span>
-                    <span class="font-label-caps text-label-caps text-primary tracking-wider">Skin-Friendly</span>
-                </div>
-                <div class="flex flex-col items-center justify-center text-center px-4">
-                    <span class="material-symbols-outlined text-tertiary mb-3 text-3xl">local_shipping</span>
-                    <span class="font-label-caps text-label-caps text-primary tracking-wider">Free Shipping</span>
-                </div>
-                <div class="flex flex-col items-center justify-center text-center px-4">
-                    <span class="material-symbols-outlined text-tertiary mb-3 text-3xl">assignment_return</span>
-                    <span class="font-label-caps text-label-caps text-primary tracking-wider">Easy Returns</span>
-                </div>
-            </div>
-        </div>
-    </section>
-    <!-- 4. Featured Collections -->
-    <section class="py-16 md:py-[120px] bg-background" id="collections">
-        <div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
-            <div class="text-center mb-12 md:mb-16">
-                <span class="font-label-caps text-label-caps text-tertiary tracking-widest uppercase mb-4 block">Curated
-                    Pieces</span>
-                <h2 class="font-headline-lg text-3xl md:text-headline-lg text-primary">Our Collections</h2>
-            </div>
-            <div id="products-grid" class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
-                <!-- Products will be dynamically injected here by Javascript -->
-            </div>
-        </div>
-    </section>
-    <!-- 6. Brand Story -->
-    <section id="story" class="py-16 md:py-[120px] bg-secondary/30">
-        <div class="max-w-container-max mx-auto px-margin-mobile md:px-margin-desktop">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-12 md:gap-16 items-center">
-                <!-- Image side -->
-                <div class="relative">
-                    <div class="aspect-square rounded-full overflow-hidden shadow-ambient">
-                        <img alt="Detailed close-up of gold flower necklace" class="w-full h-full object-cover"
-                            src="https://lh3.googleusercontent.com/aida-public/AB6AXuAOpCDCAsv-fB65VJrwizQnne-oELdPzfgtn_GwHs9BElateTPYTPmPpnOURknDGEjzQIrnq6TrEu7uPX5gS6sjU3PySnrL2Jn4kgTn3QXehW2O6RUgF6yvoAxzGiCy_QU6v_kAmFglJRMy3YfPs8Ml4FxC-dVOION82axiLAqB8YqVfjv7fmJQinWAMiBgSSg5bNd03s2-bpajlnwL_QqSMZjskRu4QQ4OTyuQIegwhpVfw_lzide1m-jlmjMmgL6G3te16NTk1oQ" />
-                    </div>
-                    <!-- Floating decorative element -->
-                    <div class="absolute -bottom-8 -right-8 w-48 h-48 rounded-full border border-tertiary/30 -z-10">
-                    </div>
-                </div>
-                <!-- Text side -->
-                <div class="flex flex-col space-y-4 md:space-y-6">
-                    <span class="font-label-caps text-label-caps text-tertiary tracking-widest uppercase">The
-                        Heritage</span>
-                    <h2 class="font-headline-lg text-3xl md:text-headline-lg text-primary">Crafted With Intention</h2>
-                    <p class="font-body-lg text-body-lg text-on-surface-variant leading-relaxed">
-                        Every piece of Eternova jewelry is a testament to the art of traditional craftsmanship melded
-                        with modern sensibilities. We believe that true luxury lies in the details—the satisfying weight
-                        of solid gold, the brilliant fire of an ethically sourced diamond, and the seamless finish that
-                        feels like a second skin.
-                    </p>
-                    <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed pb-4">
-                        Our artisans pour hours of meticulous work into each creation, ensuring that what you wear today
-                        remains an heirloom for generations to come.
-                    </p>
-                    <a class="inline-flex items-center font-label-caps text-label-caps text-primary border-b border-primary pb-1 hover:text-tertiary hover:border-tertiary transition-colors w-max"
-                        href="#">
-                        Read Our Story
-                    </a>
-                </div>
-            </div>
-        </div>
-    </section>
-    <!-- 11. Footer -->
-    <footer id="footer" class="w-full py-12 md:py-20 bg-surface-container-low border-t border-outline-variant/20">
+</main>
+<footer id="footer" class="w-full py-12 md:py-20 bg-surface-container-low border-t border-outline-variant/20">
         <div
             class="grid grid-cols-1 md:grid-cols-4 gap-gutter px-margin-mobile md:px-margin-desktop max-w-container-max mx-auto">
             <!-- Brand Column -->
