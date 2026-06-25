@@ -1,5 +1,3 @@
-const Cart = require('../models/Cart');
-const Product = require('../models/Product');
 
 // Helper to recalculate totals
 const recalculate = (cart) => {

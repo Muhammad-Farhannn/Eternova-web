@@ -1,8 +1,10 @@
 const express = require('express');
-const { createOrder, getMyOrders, getOrderById, cancelOrder } = require('../controllers/orderController');
+const { createGuestOrder, createOrder, getMyOrders, getOrderById, cancelOrder } = require('../controllers/orderController');
 const { protect } = require('../middleware/auth');
 
 const router = express.Router();
+
+router.post('/guest', createGuestOrder);
 
 router.use(protect);
 

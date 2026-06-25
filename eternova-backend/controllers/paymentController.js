@@ -1,5 +1,4 @@
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
-const Order = require('../models/Order');
 
 // @desc    Create payment intent
 // @route   POST /api/payment/intent

@@ -1,5 +1,3 @@
-const Product = require('../models/Product');
-const Review = require('../models/Review');
 
 // @desc    Get all products
 // @route   GET /api/products

@@ -1,4 +1,3 @@
-const Wishlist = require('../models/Wishlist');
 
 // @desc    Get user wishlist
 // @route   GET /api/wishlist

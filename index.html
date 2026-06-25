@@ -598,6 +598,8 @@
                 <span id="cart-total" class="font-headline-sm text-2xl text-primary">$0.00</span>
             </div>
             <button
+                id="checkout-btn"
+                onclick="handleCheckout()"
                 class="w-full py-4 bg-tertiary text-black font-label-caps uppercase tracking-widest hover:bg-white transition-colors duration-300">
                 Checkout
             </button>
@@ -756,6 +758,55 @@
                 productsGrid.innerHTML = '<p class="text-error text-center col-span-3 py-10">Failed to load products.</p>';
             }
         }
+
+        window.handleCheckout = async function() {
+            if (cart.length === 0) {
+                alert('Your cart is empty!');
+                return;
+            }
+            
+            const checkoutBtn = document.getElementById('checkout-btn');
+            const originalText = checkoutBtn.innerText;
+            checkoutBtn.innerText = 'Processing...';
+            checkoutBtn.disabled = true;
+
+            const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+            
+            try {
+                const response = await fetch('http://localhost:5000/api/orders/guest', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        items: cart,
+                        shippingAddress: { city: 'Test City', address: '123 Test St' }, // Placeholder address
+                        paymentMethod: 'cod',
+                        itemsPrice: total,
+                        shippingPrice: 0,
+                        taxPrice: 0,
+                        totalPrice: total
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    alert('Order placed successfully! Your order ID is ' + result.data.id);
+                    cart = [];
+                    updateCartUI();
+                    toggleCart();
+                } else {
+                    alert('Failed to place order: ' + result.message);
+                }
+            } catch (err) {
+                console.error('Checkout error:', err);
+                alert('Checkout failed due to network error.');
+            } finally {
+                checkoutBtn.innerText = originalText;
+                checkoutBtn.disabled = false;
+            }
+        };
 
         // Add keyframe style
         const style = document.createElement('style');
