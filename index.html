@@ -493,19 +493,22 @@
             : `ezgif-frame-${index.toString().padStart(3, '0')}.jpg`;
 
         const preloadImages = () => {
+            // Pre-fill images array
             for (let i = 1; i <= frameCount; i++) {
-                const img = new Image();
-                img.src = currentFrame(i);
-                img.onload = () => {
-                    loadedImages++;
-                    loading.innerText = `Loading frames... ${Math.floor((loadedImages / frameCount) * 100)}%`;
-                    if (loadedImages === frameCount) {
-                        loading.style.display = 'none';
-                        initCanvas();
-                    }
-                };
-                images.push(img);
+                images.push(new Image());
             }
+
+            // Load first image to initialize canvas immediately
+            images[0].onload = () => {
+                loading.style.display = 'none';
+                initCanvas();
+
+                // Lazy load the rest in the background
+                for (let i = 2; i <= frameCount; i++) {
+                    images[i - 1].src = currentFrame(i);
+                }
+            };
+            images[0].src = currentFrame(1);
         };
 
         const initCanvas = () => {
@@ -515,7 +518,7 @@
         };
 
         const render = (frameIndex) => {
-            if (images[frameIndex]) {
+            if (images[frameIndex] && images[frameIndex].complete) {
                 context.clearRect(0, 0, canvas.width, canvas.height);
                 context.drawImage(images[frameIndex], 0, 0);
             }
