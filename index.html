@@ -597,9 +597,7 @@
                 <span class="font-body-lg text-primary">Total</span>
                 <span id="cart-total" class="font-headline-sm text-2xl text-primary">$0.00</span>
             </div>
-            <button
-                id="checkout-btn"
-                onclick="handleCheckout()"
+            <button id="checkout-btn" onclick="handleCheckout()"
                 class="w-full py-4 bg-tertiary text-black font-label-caps uppercase tracking-widest hover:bg-white transition-colors duration-300">
                 Checkout
             </button>
@@ -688,7 +686,7 @@
             localStorage.setItem('eternova_cart', JSON.stringify(cart));
         }
 
-        window.updateQuantity = function(index, delta) {
+        window.updateQuantity = function (index, delta) {
             cart[index].quantity += delta;
             if (cart[index].quantity <= 0) {
                 cart.splice(index, 1);
@@ -696,12 +694,12 @@
             updateCartUI();
         }
 
-        window.removeFromCart = function(index) {
+        window.removeFromCart = function (index) {
             cart.splice(index, 1);
             updateCartUI();
         }
 
-        window.addToCart = function(id, name, price, image) {
+        window.addToCart = function (id, name, price, image) {
             const existingItem = cart.find(item => item.id === id);
             if (existingItem) {
                 existingItem.quantity += 1;
@@ -709,7 +707,7 @@
                 cart.push({ id, name, price, image, quantity: 1 });
             }
             updateCartUI();
-            
+
             // Show toast or open cart
             toggleCart();
         }
@@ -759,22 +757,21 @@
             }
         }
 
-        window.handleCheckout = async function() {
+        window.handleCheckout = async function () {
             if (cart.length === 0) {
                 alert('Your cart is empty!');
                 return;
             }
-            
+
             const checkoutBtn = document.getElementById('checkout-btn');
             const originalText = checkoutBtn.innerText;
             checkoutBtn.innerText = 'Processing...';
             checkoutBtn.disabled = true;
 
             const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-            
+
             try {
-                const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://localhost:5000' : '';
-                const response = await fetch(`${API_BASE}/api/orders/guest`, {
+                const response = await fetch('http://localhost:5000/api/orders/guest', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -789,9 +786,9 @@
                         totalPrice: total
                     })
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (result.success) {
                     alert('Order placed successfully! Your order ID is ' + result.data.id);
                     cart = [];
