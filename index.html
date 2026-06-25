@@ -610,7 +610,7 @@
         const SUPABASE_URL = 'https://grcgagvlnscbqliiklsu.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdyY2dhZ3ZsbnNjYnFsaWlrbHN1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzMjA3NTAsImV4cCI6MjA5Nzg5Njc1MH0.rSq_a4P5SqVoxa7BuEkHVB1grNpQs9JXSaA8qp4r5uU'; // MUST BE ANON KEY, NEVER SERVICE KEY
 
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let cart = JSON.parse(localStorage.getItem('eternova_cart')) || [];
 
@@ -715,7 +715,7 @@
         // Fetch Products
         async function fetchProducts() {
             try {
-                const { data: products, error } = await supabase
+                const { data: products, error } = await supabaseClient
                     .from('products')
                     .select('*')
                     .order('created_at', { ascending: false });
