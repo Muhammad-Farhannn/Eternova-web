@@ -771,7 +771,8 @@
             const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
             try {
-                const response = await fetch('http://localhost:5000/api/orders/guest', {
+                // In production, use the relative path so it hits the Vercel Serverless Function
+                const response = await fetch('/api/orders/guest', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
