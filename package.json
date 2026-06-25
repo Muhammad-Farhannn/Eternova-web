@@ -1,0 +1,12 @@
+{
+  "name": "eternova-frontend",
+  "version": "1.0.0",
+  "description": "Eternova Static Frontend",
+  "scripts": {
+    "dev": "serve .",
+    "build": "echo \"No build step required\""
+  },
+  "dependencies": {
+    "serve": "^14.2.0"
+  }
+}
