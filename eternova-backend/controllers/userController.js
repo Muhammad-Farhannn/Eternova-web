@@ -7,10 +7,24 @@ exports.updateProfile = async (req, res, next) => {
     try {
         const { name, phone } = req.body;
 
+        let { data: profile, error: fetchError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', req.user.id)
+            .single();
+
+        if (fetchError && fetchError.code === 'PGRST116') {
+            profile = { id: req.user.id, email: req.user.email };
+        } else if (fetchError) {
+            return res.status(400).json({ success: false, message: fetchError.message });
+        }
+
+        profile.name = name;
+        profile.phone = phone;
+
         const { data: user, error } = await supabase
             .from('profiles')
-            .update({ name, phone })
-            .eq('id', req.user.id)
+            .upsert(profile)
             .select()
             .single();
 
@@ -68,14 +82,16 @@ exports.addAddress = async (req, res, next) => {
         };
 
         // Fetch current addresses
-        const { data: profile, error: fetchError } = await supabase
+        let { data: profile, error: fetchError } = await supabase
             .from('profiles')
-            .select('addresses')
+            .select('*')
             .eq('id', req.user.id)
             .single();
 
-        if (fetchError) {
-            return res.status(404).json({ success: false, message: 'Profile not found' });
+        if (fetchError && fetchError.code === 'PGRST116') {
+            profile = { id: req.user.id, email: req.user.email };
+        } else if (fetchError) {
+            return res.status(400).json({ success: false, message: fetchError.message });
         }
 
         let addresses = profile.addresses || [];
@@ -89,11 +105,11 @@ exports.addAddress = async (req, res, next) => {
         }
 
         addresses.push(newAddress);
+        profile.addresses = addresses;
 
         const { data: updatedProfile, error: updateError } = await supabase
             .from('profiles')
-            .update({ addresses })
-            .eq('id', req.user.id)
+            .upsert(profile)
             .select()
             .single();
 
@@ -114,14 +130,16 @@ exports.updateAddress = async (req, res, next) => {
     try {
         const addressId = req.params.addressId;
 
-        const { data: profile, error: fetchError } = await supabase
+        let { data: profile, error: fetchError } = await supabase
             .from('profiles')
-            .select('addresses')
+            .select('*')
             .eq('id', req.user.id)
             .single();
 
-        if (fetchError) {
-            return res.status(404).json({ success: false, message: 'Profile not found' });
+        if (fetchError && fetchError.code === 'PGRST116') {
+            profile = { id: req.user.id, email: req.user.email };
+        } else if (fetchError) {
+            return res.status(400).json({ success: false, message: fetchError.message });
         }
 
         let addresses = profile.addresses || [];
@@ -137,11 +155,11 @@ exports.updateAddress = async (req, res, next) => {
         }
 
         addresses[index] = { ...addresses[index], ...req.body };
+        profile.addresses = addresses;
 
         const { data: updatedProfile, error: updateError } = await supabase
             .from('profiles')
-            .update({ addresses })
-            .eq('id', req.user.id)
+            .upsert(profile)
             .select()
             .single();
 
@@ -162,25 +180,27 @@ exports.deleteAddress = async (req, res, next) => {
     try {
         const addressId = req.params.addressId;
 
-        const { data: profile, error: fetchError } = await supabase
+        let { data: profile, error: fetchError } = await supabase
             .from('profiles')
-            .select('addresses')
+            .select('*')
             .eq('id', req.user.id)
             .single();
 
-        if (fetchError) {
-            return res.status(404).json({ success: false, message: 'Profile not found' });
+        if (fetchError && fetchError.code === 'PGRST116') {
+            profile = { id: req.user.id, email: req.user.email };
+        } else if (fetchError) {
+            return res.status(400).json({ success: false, message: fetchError.message });
         }
 
         let addresses = profile.addresses || [];
         if (!Array.isArray(addresses)) addresses = [];
 
         addresses = addresses.filter(addr => addr.id !== addressId);
+        profile.addresses = addresses;
 
         const { data: updatedProfile, error: updateError } = await supabase
             .from('profiles')
-            .update({ addresses })
-            .eq('id', req.user.id)
+            .upsert(profile)
             .select()
             .single();
 
