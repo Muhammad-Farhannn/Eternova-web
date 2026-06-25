@@ -289,9 +289,9 @@
             <nav id="nav-menu"
                 class="hidden fixed top-0 left-0 h-screen w-1/2 bg-surface-container-low/95 backdrop-blur-md border-r border-outline-variant/20 flex-col pt-24 px-margin-mobile shadow-2xl md:static md:h-auto md:w-auto md:bg-transparent md:border-none md:flex md:flex-row md:gap-8 md:pt-0 md:px-0 md:shadow-none md:mt-0 items-start md:items-center transition-all z-[-1] md:z-auto">
                 <a class="font-label-caps text-label-caps hover:text-tertiary transition-colors border-b border-transparent hover:border-tertiary pb-1 mb-4 md:mb-0"
-                    href="#collections">Collections</a>
+                    href="index.html#collections">Collections</a>
                 <a class="font-label-caps text-label-caps hover:text-tertiary transition-colors border-b border-transparent hover:border-tertiary pb-1 mb-4 md:mb-0"
-                    href="#story">About</a>
+                    href="index.html#story">About</a>
                 <a class="font-label-caps text-label-caps hover:text-tertiary transition-colors border-b border-transparent hover:border-tertiary pb-1"
                     href="#footer">Care Guide</a>
             </nav>
@@ -299,7 +299,7 @@
             <!-- Brand Logo -->
             <div class="absolute left-1/2 transform -translate-x-1/2 z-50 pointer-events-none">
                 <a class="font-headline-md text-2xl md:text-headline-md tracking-widest uppercase pointer-events-auto"
-                    href="#">Eternova</a>
+                    href="index.html">Eternova</a>
             </div>
 
             <!-- Actions -->
@@ -341,17 +341,17 @@
             <div class="md:col-span-1 space-y-4">
                 <div class="bg-surface-container-low p-6 rounded-xl border border-outline-variant/20 shadow-sm">
                     <h3 class="font-label-caps text-label-caps text-tertiary mb-6 uppercase tracking-widest border-b border-outline-variant/20 pb-2">Navigation</h3>
-                    <div class="space-y-4 flex flex-col">
-                        <a href="#" class="font-body-md text-primary hover:text-tertiary transition-colors">Personal Info</a>
-                        <a href="#" class="font-body-md text-on-surface-variant hover:text-tertiary transition-colors">Addresses</a>
-                        <a href="#" class="font-body-md text-on-surface-variant hover:text-tertiary transition-colors">Order History</a>
+                    <div class="space-y-4 flex flex-col" id="profile-tabs">
+                        <button id="tab-btn-info" onclick="switchTab('info')" class="text-left font-body-md text-primary hover:text-tertiary transition-colors tab-btn active-tab-btn">Personal Info</button>
+                        <button id="tab-btn-addresses" onclick="switchTab('addresses')" class="text-left font-body-md text-on-surface-variant hover:text-tertiary transition-colors tab-btn">Addresses</button>
+                        <button id="tab-btn-orders" onclick="switchTab('orders')" class="text-left font-body-md text-on-surface-variant hover:text-tertiary transition-colors tab-btn">Order History</button>
                     </div>
                 </div>
             </div>
             
             <div class="md:col-span-2 space-y-8">
                 <!-- Personal Info -->
-                <div class="bg-surface-container-low p-6 md:p-8 rounded-xl border border-outline-variant/20 shadow-lg">
+                <div id="tab-info" class="bg-surface-container-low p-6 md:p-8 rounded-xl border border-outline-variant/20 shadow-lg tab-content">
                     <h2 class="font-headline-md text-2xl text-primary mb-6">Personal Information</h2>
                     <form id="profile-form" class="space-y-6">
                         <div id="profile-msg" class="hidden p-3 rounded-lg text-sm font-body-sm"></div>
@@ -379,6 +379,22 @@
                         </div>
                     </form>
                 </div>
+
+                <!-- Addresses -->
+                <div id="tab-addresses" class="bg-surface-container-low p-6 md:p-8 rounded-xl border border-outline-variant/20 shadow-lg tab-content hidden">
+                    <h2 class="font-headline-md text-2xl text-primary mb-6">Saved Addresses</h2>
+                    <div id="addresses-container" class="space-y-4">
+                        <p class="text-on-surface-variant font-body-md">Loading addresses...</p>
+                    </div>
+                </div>
+
+                <!-- Order History -->
+                <div id="tab-orders" class="bg-surface-container-low p-6 md:p-8 rounded-xl border border-outline-variant/20 shadow-lg tab-content hidden">
+                    <h2 class="font-headline-md text-2xl text-primary mb-6">Order History</h2>
+                    <div id="orders-container" class="space-y-4">
+                        <p class="text-on-surface-variant font-body-md">Loading orders...</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -388,6 +404,25 @@
             window.location.href = 'login.html';
         }
         
+        // Tab Switching Logic
+        function switchTab(tabId) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('text-primary', 'active-tab-btn');
+                el.classList.add('text-on-surface-variant');
+            });
+
+            // Show selected tab
+            document.getElementById('tab-' + tabId).classList.remove('hidden');
+            const activeBtn = document.getElementById('tab-btn-' + tabId);
+            activeBtn.classList.remove('text-on-surface-variant');
+            activeBtn.classList.add('text-primary', 'active-tab-btn');
+
+            if (tabId === 'addresses') loadAddresses();
+            if (tabId === 'orders') loadOrders();
+        }
+
         async function loadProfile() {
             try {
                 const res = await fetch('/api/auth/me', {
@@ -455,6 +490,62 @@
             localStorage.removeItem('token');
             window.location.href = 'login.html';
         });
+
+        // Load Addresses
+        async function loadAddresses() {
+            const container = document.getElementById('addresses-container');
+            container.innerHTML = '<p class="text-on-surface-variant font-body-md">Loading addresses...</p>';
+            try {
+                const res = await fetch('/api/auth/me', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                if (data.success && data.user.addresses && data.user.addresses.length > 0) {
+                    container.innerHTML = data.user.addresses.map(addr => `
+                        <div class="border border-outline-variant/20 p-4 rounded-lg flex justify-between items-start">
+                            <div>
+                                <p class="font-body-md text-primary font-bold">${addr.address} ${addr.isDefault ? '<span class="text-xs bg-tertiary text-black px-2 py-1 rounded ml-2">Default</span>' : ''}</p>
+                                <p class="text-sm text-on-surface-variant">${addr.city}</p>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<p class="text-on-surface-variant font-body-md">No addresses saved yet.</p>';
+                }
+            } catch (err) {
+                container.innerHTML = '<p class="text-error font-body-md">Failed to load addresses.</p>';
+            }
+        }
+
+        // Load Orders
+        async function loadOrders() {
+            const container = document.getElementById('orders-container');
+            container.innerHTML = '<p class="text-on-surface-variant font-body-md">Loading orders...</p>';
+            try {
+                const res = await fetch('/api/orders/my', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await res.json();
+                if (data.success && data.data && data.data.length > 0) {
+                    container.innerHTML = data.data.map(order => `
+                        <div class="border border-outline-variant/20 p-4 rounded-lg">
+                            <div class="flex justify-between items-center mb-2 border-b border-outline-variant/10 pb-2">
+                                <span class="font-label-caps text-tertiary">Order #${order.id.split('-')[0]}</span>
+                                <span class="text-sm px-2 py-1 bg-surface-container rounded text-primary">${order.order_status}</span>
+                            </div>
+                            <div class="flex justify-between items-center mt-2">
+                                <span class="text-on-surface-variant text-sm">${new Date(order.created_at).toLocaleDateString()}</span>
+                                <span class="font-body-md text-primary font-bold">$${(order.total_price || 0).toFixed(2)}</span>
+                            </div>
+                        </div>
+                    `).join('');
+                } else {
+                    container.innerHTML = '<p class="text-on-surface-variant font-body-md">No orders placed yet.</p>';
+                }
+            } catch (err) {
+                container.innerHTML = '<p class="text-error font-body-md">Failed to load orders.</p>';
+            }
+        }
     </script>
 
 </main>
@@ -464,7 +555,7 @@
             <!-- Brand Column -->
             <div class="flex flex-col space-y-6 md:col-span-1">
                 <a class="font-headline-md text-headline-md text-primary uppercase tracking-widest"
-                    href="#">Eternova</a>
+                    href="index.html">Eternova</a>
                 <p class="font-body-sm text-body-sm text-on-surface-variant max-w-xs">
                     Timeless elegance, handcrafted for the modern woman.
                 </p>
