@@ -312,7 +312,7 @@
                     <span
                         class="material-symbols-outlined text-[20px] md:text-[24px] group-hover:scale-110 transition-transform">favorite</span>
                 </button>
-                <button id="user-btn" aria-label="Profile" onclick="window.location.href='login.html'" class="hover:text-tertiary transition-colors group mr-2 sm:mr-4 md:mr-6">
+                <button id="user-btn" aria-label="Profile" onclick="window.location.href = localStorage.getItem('token') ? 'profile.html' : 'login.html'" class="hover:text-tertiary transition-colors group mr-2 sm:mr-4 md:mr-6">
 <span class="material-symbols-outlined text-[20px] md:text-[24px] group-hover:scale-110 transition-transform">person</span>
 </button>
 <button id="cart-btn" aria-label="Cart" class="hover:text-tertiary transition-colors group relative">

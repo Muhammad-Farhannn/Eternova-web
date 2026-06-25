@@ -87,6 +87,13 @@ exports.getMe = async (req, res, next) => {
             .single();
 
         if (error) {
+            // PGRST116 is Supabase error for "No rows found"
+            if (error.code === 'PGRST116') {
+                return res.status(200).json({ 
+                    success: true, 
+                    user: { id: req.user.id, email: req.user?.email || '', name: '' } 
+                });
+            }
             return res.status(404).json({ success: false, message: 'User profile not found' });
         }
 
